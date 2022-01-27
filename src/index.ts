@@ -539,9 +539,14 @@ export class LinkedInProfileScraper {
         '#experience-section .pv-profile-section__see-more-inline.link', // Experience
         '.pv-profile-section.education-section button.pv-profile-section__see-more-inline', // Education
         '.pv-skill-categories-section [data-control-name="skill_details"]', // Skills
+        '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button--tertiary.artdeco-button--muted', // Experience,
+        '.pv-profile-section__card-action-bar.pv-skills-section__additional-skills.artdeco-container-card-action-bar.artdeco-button.artdeco-button--tertiary.artdeco-button--3.artdeco-button--fluid.artdeco-button--muted', // Skills
       ];
 
-      const seeMoreButtonsSelectors = ['.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]', '.lt-line-clamp__more[href="#"]:not(.lt-line-clamp__ellipsis--dummy)']
+      const seeMoreButtonsSelectors = [
+        '.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]',
+        '.pv-profile-section__see-more-inline'
+      ]
 
       statusLog(logSection, 'Expanding all sections by clicking their "See more" buttons', scraperSessionId)
 
@@ -584,19 +589,19 @@ export class LinkedInProfileScraper {
 
         const url = window.location.href
 
-        const fullNameElement = profileSection?.querySelector('.pv-top-card--list li:first-child')
+        const fullNameElement = profileSection?.querySelector('.text-heading-xlarge.inline')
         const fullName = fullNameElement?.textContent || null
 
-        const titleElement = profileSection?.querySelector('h2')
+        const titleElement = profileSection?.querySelector('.text-body-medium.break-words')
         const title = titleElement?.textContent || null
 
         const locationElement = profileSection?.querySelector('.pv-top-card--list.pv-top-card--list-bullet.mt1 li:first-child')
         const location = locationElement?.textContent || null
 
-        const photoElement = profileSection?.querySelector('.pv-top-card__photo') || profileSection?.querySelector('.profile-photo-edit__preview')
+        const photoElement = profileSection?.querySelector('.pv-top-card__photo-wrapper') || profileSection?.querySelector('.profile-photo-edit__preview')
         const photo = photoElement?.getAttribute('src') || null
 
-        const descriptionElement = document.querySelector('.pv-about__summary-text .lt-line-clamp__raw-line') // Is outside "profileSection"
+        const descriptionElement = document.querySelector('.pv-about-section') // Is outside "profileSection"
         const description = descriptionElement?.textContent || null
 
         return {
