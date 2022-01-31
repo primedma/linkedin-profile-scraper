@@ -638,34 +638,59 @@ export class LinkedInProfileScraper {
 
       const rawExperiencesData: RawExperience[] = await page.$$eval('#experience-section ul > .ember-view', (nodes) => {
         let data: RawExperience[] = []
-
+        let currentCompanySummary: object = {};
+        
         // Using a for loop so we can use await inside of it
         for (const node of nodes) {
-          const titleElement = node.querySelector('h3');
-          const title = titleElement?.textContent || null
+          let title, employmentType, company, description, startDate, endDate, dateRangeText, endDateIsPresent, location;
+          if (node.querySelector('.pv-entity__company-summary-info') != null) {
+            const companyElement = node.querySelector('.pv-entity__company-summary-info span:nth-child(2)');
+            currentCompanySummary['company_name'] = companyElement?.textContent || null;
 
-          const employmentTypeElement = node.querySelector('span.pv-entity__secondary-title');
-          const employmentType = employmentTypeElement?.textContent || null
+            const descriptionElement = node.querySelector('.pv-entity__description');
+            currentCompanySummary[''] = descriptionElement?.textContent || null
+            
+            continue;
+          } else {
+            if (node.querySelector('.pv-entity__secondary-title.separator') != null) {
+              currentCompanySummary = {};
+            }
+            if (Object.keys(currentCompanySummary).length !== 0) {
+              const titleElement = node.querySelector('h3 span:nth-child(2)');
+              title = titleElement?.textContent || null;
 
-          const companyElement = node.querySelector('.pv-entity__secondary-title');
-          const companyElementClean = companyElement && companyElement?.querySelector('span') ? companyElement?.removeChild(companyElement.querySelector('span') as Node) && companyElement : companyElement || null;
-          const company = companyElementClean?.textContent || null
+              const employmentTypeElement = node.querySelector('h4');
+              employmentType = employmentTypeElement?.textContent || null
 
-          const descriptionElement = node.querySelector('.pv-entity__description');
-          const description = descriptionElement?.textContent || null
+              company = currentCompanySummary['company_name'];
+            } else {
+              const titleElement = node.querySelector('h3');
+              title = titleElement?.textContent || null
 
-          const dateRangeElement = node.querySelector('.pv-entity__date-range span:nth-child(2)');
-          const dateRangeText = dateRangeElement?.textContent || null
+              const employmentTypeElement = node.querySelector('span.pv-entity__secondary-title');
+              employmentType = employmentTypeElement?.textContent || null
+            
+              const companyElement = node.querySelector('.pv-entity__secondary-title');
+              const companyElementClean = companyElement && companyElement?.querySelector('span') ? companyElement?.removeChild(companyElement.querySelector('span') as Node) && companyElement : companyElement || null;
+              company = companyElementClean?.textContent || null
+            }
+            
+            const descriptionElement = node.querySelector('.pv-entity__description');
+            description = descriptionElement?.textContent || null
 
-          const startDatePart = dateRangeText?.split('–')[0] || null;
-          const startDate = startDatePart?.trim() || null;
+            const dateRangeElement = node.querySelector('.pv-entity__date-range span:nth-child(2)');
+            dateRangeText = dateRangeElement?.textContent || null
 
-          const endDatePart = dateRangeText?.split('–')[1] || null;
-          const endDateIsPresent = endDatePart?.trim().toLowerCase() === 'present' || false;
-          const endDate = (endDatePart && !endDateIsPresent) ? endDatePart.trim() : 'Present';
+            const startDatePart = dateRangeText?.split('–')[0] || null;
+            startDate = startDatePart?.trim() || null;
 
-          const locationElement = node.querySelector('.pv-entity__location span:nth-child(2)');
-          const location = locationElement?.textContent || null;
+            const endDatePart = dateRangeText?.split('–')[1] || null;
+            endDateIsPresent = endDatePart?.trim().toLowerCase() === 'present' || false;
+            endDate = (endDatePart && !endDateIsPresent) ? endDatePart.trim() : 'Present';
+
+            const locationElement = node.querySelector('.pv-entity__location span:nth-child(2)');
+            location = locationElement?.textContent || null;
+          }
 
           data.push({
             title,
