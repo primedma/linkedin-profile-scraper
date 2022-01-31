@@ -568,8 +568,9 @@ export class LinkedInProfileScraper {
         '.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]',
         '.pv-profile-section__see-more-inline',
         '.inline-show-more-text__button',
-        '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button',//--tertiary.artdeco-button--muted',
-        '.pv-entity__paging button.pv-profile-section__see-more-inline'
+        '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button--tertiary.artdeco-button--muted',
+        '.pv-entity__paging button.pv-profile-section__see-more-inline',
+        '#experience-section [aria-expanded="false"]'
       ]
 
       statusLog(logSection, 'Expanding all sections by clicking their "See more" buttons', scraperSessionId)
@@ -664,7 +665,7 @@ export class LinkedInProfileScraper {
 
       statusLog(logSection, `Parsing experiences data...`, scraperSessionId)
 
-      const rawExperiencesData: RawExperience[] = await page.$$eval('#experience-section ul > .ember-view, #experience-section .pv-entity__position-group-role-item', (nodes) => {
+      const rawExperiencesData: RawExperience[] = await page.$$eval('#experience-section ul > .ember-view, #experience-section .pv-entity__position-group-role-item-fading-timeline, #experience-section .pv-entity__position-group-role-item', (nodes) => {
         let data: RawExperience[] = []
         let currentCompanySummary: object = {};
         
