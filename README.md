@@ -1,4 +1,3 @@
-### 👨‍💻  I'm available for hire as a freelancer: [Say hi on LinkedIn](https://www.linkedin.com/in/jvandenaardweg/)
 ------
 # LinkedIn Profile Scraper
 LinkedIn profile scraper using Puppeteer headless browser. So you can use it on a server. Returns structured data in JSON format. Works in 2020.
@@ -14,6 +13,8 @@ This scraper will extract publicly available data:
 **🦸 Volunteer experiences:** title, company, description, start date and end date name
 
 **🏋️‍♂️ Skills:** name and endorsement count
+
+**📜 Certifications:** certification, issuing organization, issue and expiry dates
 
 All dates are formatted to a generic format.
 
