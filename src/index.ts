@@ -172,7 +172,8 @@ export class LinkedInProfileScraper {
   }
 
   private browser: Browser | null = null;
-
+  private launched: boolean = false;
+  
   constructor(userDefinedOptions: ScraperUserDefinedOptions) {
     const logSection = 'constructing';
     const errorPrefix = 'Error during setup.';
@@ -268,6 +269,7 @@ export class LinkedInProfileScraper {
         timeout: this.options.timeout
       })
 
+      this.launched = true;
       statusLog(logSection, 'Puppeteer launched!')
 
       await this.checkIfLoggedIn();
@@ -283,6 +285,10 @@ export class LinkedInProfileScraper {
     }
   };
 
+  public isPuppeteerLoaded = async () => {
+    return this.launched;
+  }
+
   /**
    * Create a Puppeteer page with some extra settings to speed up the crawling process.
    */
@@ -294,7 +300,7 @@ export class LinkedInProfileScraper {
     }
 
     // Important: Do not block "stylesheet", makes the crawler not work for LinkedIn
-    const blockedResources = ['image', 'media', 'font', 'texttrack', 'object', 'beacon', 'csp_report', 'imageset'];
+    const blockedResources = ['media', 'font', 'texttrack', 'object', 'beacon', 'csp_report', 'imageset']; // not blocking image since we want profile pics
 
     try {
       const page = await this.browser.newPage()
@@ -416,7 +422,7 @@ export class LinkedInProfileScraper {
   public close = (page?: Page): Promise<void> => {
     return new Promise(async (resolve, reject) => {
       const loggerPrefix = 'close';
-
+      this.launched = false;
       if (page) {
         try {
           statusLog(loggerPrefix, 'Closing page...');
@@ -513,7 +519,7 @@ export class LinkedInProfileScraper {
     }
 
     try {
-      // Eeach run has it's own page
+      // Each run has it's own page
       const page = await this.createPage();
 
       statusLog(logSection, `Navigating to LinkedIn profile: ${profileUrl}`, scraperSessionId)
@@ -537,6 +543,7 @@ export class LinkedInProfileScraper {
       const expandButtonsSelectors = [
         '.pv-profile-section.pv-about-section .lt-line-clamp__more', // About
         '#experience-section .pv-profile-section__see-more-inline.link', // Experience
+        '#experience-section .inline-show-more-text__button.link',
         '.pv-profile-section.education-section button.pv-profile-section__see-more-inline', // Education
         '.pv-skill-categories-section [data-control-name="skill_details"]', // Skills
         '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button--tertiary.artdeco-button--muted', // Experience,
@@ -545,7 +552,8 @@ export class LinkedInProfileScraper {
 
       const seeMoreButtonsSelectors = [
         '.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]',
-        '.pv-profile-section__see-more-inline'
+        '.pv-profile-section__see-more-inline',
+        '.inline-show-more-text__button.link'
       ]
 
       statusLog(logSection, 'Expanding all sections by clicking their "See more" buttons', scraperSessionId)
@@ -595,10 +603,10 @@ export class LinkedInProfileScraper {
         const titleElement = profileSection?.querySelector('.text-body-medium.break-words')
         const title = titleElement?.textContent || null
 
-        const locationElement = profileSection?.querySelector('.pv-top-card--list.pv-top-card--list-bullet.mt1 li:first-child')
+        const locationElement = profileSection?.querySelector('.text-body-small.inline.t-black--light.break-words')
         const location = locationElement?.textContent || null
 
-        const photoElement = profileSection?.querySelector('.pv-top-card__photo-wrapper') || profileSection?.querySelector('.profile-photo-edit__preview')
+        const photoElement = profileSection?.querySelector('.pv-top-card-profile-picture__image.pv-top-card-profile-picture__image--show') || profileSection?.querySelector('.profile-photo-edit__preview')
         const photo = photoElement?.getAttribute('src') || null
 
         const descriptionElement = document.querySelector('.pv-about-section') // Is outside "profileSection"

@@ -1,6 +1,6 @@
 {
-  "name": "linkedin-profile-scraper",
-  "version": "2.3.1",
+  "name": "@n-h-n/linkedin-profile-scraper",
+  "version": "2.4.10",
   "description": "LinkedIn profile scraper returning structured profile data in JSON. Works in 2020.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,7 +15,7 @@
   "author": "Jordy van den Aardweg <jordyvandenaardweg@gmail.com> (https://github.com/jvandenaardweg)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jvandenaardweg/linkedin-profile-scraper.git"
+    "url": "https://github.com/n-h-n/linkedin-profile-scraper.git"
   },
   "license": "ISC",
   "dependencies": {
@@ -36,7 +36,7 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "jest": "^26.1.0",
-    "release-it": "^13.6.4",
+    "release-it": "^14.12.4",
     "ts-jest": "^26.1.1",
     "ts-node-dev": "^1.0.0-pre.44",
     "typescript": "^3.9.6",
@@ -85,5 +85,9 @@
     "testPathIgnorePatterns": [
       ".e2e.test.ts"
     ]
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/jvandenaardweg/linkedin-profile-scraper/issues"
+  },
+  "homepage": "https://github.com/jvandenaardweg/linkedin-profile-scraper#readme"
 }

@@ -138,6 +138,7 @@ export const getCleanText = (text: string | null) => {
     .replace('...', '')
     .replace('See more', '')
     .replace('See less', '')
+    .replace(/\s*(see more|see less)\s*$/i, '')
     .trim()
 
   return cleanText
