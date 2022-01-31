@@ -53,6 +53,20 @@ export interface Experience {
   description: string | null;
 }
 
+interface RawCertification {
+  name: string | null;
+  issuingOrganization: string | null;
+  issueDate: string | null;
+  expirationDate: string | null;
+}
+
+interface Certification {
+  name: string | null;
+  issuingOrganization: string | null;
+  issueDate: string | null;
+  expirationDate: string | null;
+}
+
 interface RawEducation {
   schoolName: string | null;
   degreeName: string | null;
@@ -542,18 +556,20 @@ export class LinkedInProfileScraper {
       // Only click the expanding buttons when they exist
       const expandButtonsSelectors = [
         '.pv-profile-section.pv-about-section .lt-line-clamp__more', // About
-        '#experience-section .pv-profile-section__see-more-inline.link', // Experience
-        '#experience-section .inline-show-more-text__button.link',
+        '#experience-section .inline-show-more-text__button.link', // Experience
+        '#experience-section [aria-expanded="false"]',
+        '#certifications-section [aria-expanded="false"]', // Certifications,
         '.pv-profile-section.education-section button.pv-profile-section__see-more-inline', // Education
-        '.pv-skill-categories-section [data-control-name="skill_details"]', // Skills
-        '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button--tertiary.artdeco-button--muted', // Experience,
-        '.pv-profile-section__card-action-bar.pv-skills-section__additional-skills.artdeco-container-card-action-bar.artdeco-button.artdeco-button--tertiary.artdeco-button--3.artdeco-button--fluid.artdeco-button--muted', // Skills
+        // '.pv-profile-section__card-action-bar.pv-skills-section__additional-skills.artdeco-container-card-action-bar.artdeco-button.artdeco-button--tertiary.artdeco-button--3.artdeco-button--fluid.artdeco-button--muted', // Skills,
+        '[aria-controls="skill-categories-expanded"]' // Skills, shorter query
       ];
 
       const seeMoreButtonsSelectors = [
         '.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]',
         '.pv-profile-section__see-more-inline',
-        '.inline-show-more-text__button.link'
+        '.inline-show-more-text__button',
+        '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button',//--tertiary.artdeco-button--muted',
+        '.pv-entity__paging button.pv-profile-section__see-more-inline'
       ]
 
       statusLog(logSection, 'Expanding all sections by clicking their "See more" buttons', scraperSessionId)
@@ -563,6 +579,15 @@ export class LinkedInProfileScraper {
           if (await page.$(buttonSelector) !== null) {
             statusLog(logSection, `Clicking button ${buttonSelector}`, scraperSessionId)
             await page.click(buttonSelector);
+            await page.waitFor(100);
+
+            // since certifications sort of paginate expands
+            if (buttonSelector.startsWith('#certifications-section')) {
+              while (await page.$(buttonSelector) !== null) {
+                await page.click(buttonSelector);
+                await page.waitFor(100);
+              }
+            }
           }
         } catch (err) {
           statusLog(logSection, `Could not find or click expand button selector "${buttonSelector}". So we skip that one.`, scraperSessionId)
@@ -571,7 +596,7 @@ export class LinkedInProfileScraper {
       
 
       // To give a little room to let data appear. Setting this to 0 might result in "Node is detached from document" errors
-      await page.waitFor(100);
+      await page.waitFor(200);
 
       statusLog(logSection, 'Expanding all descriptions by clicking their "See more" buttons', scraperSessionId)
 
@@ -583,12 +608,15 @@ export class LinkedInProfileScraper {
             try {
               statusLog(logSection, `Clicking button ${seeMoreButtonSelector}`, scraperSessionId)
               await button.click()
+              await page.waitFor(100);
             } catch (err) {
               statusLog(logSection, `Could not find or click see more button selector "${button}". So we skip that one.`, scraperSessionId)
             }
           }
         }
       }
+
+      await page.waitFor(200);
 
       statusLog(logSection, 'Parsing profile data...', scraperSessionId)
 
@@ -636,7 +664,7 @@ export class LinkedInProfileScraper {
 
       statusLog(logSection, `Parsing experiences data...`, scraperSessionId)
 
-      const rawExperiencesData: RawExperience[] = await page.$$eval('#experience-section ul > .ember-view', (nodes) => {
+      const rawExperiencesData: RawExperience[] = await page.$$eval('#experience-section ul > .ember-view, #experience-section .pv-entity__position-group-role-item', (nodes) => {
         let data: RawExperience[] = []
         let currentCompanySummary: object = {};
         
@@ -651,46 +679,45 @@ export class LinkedInProfileScraper {
             currentCompanySummary[''] = descriptionElement?.textContent || null
             
             continue;
-          } else {
-            if (node.querySelector('.pv-entity__secondary-title.separator') != null) {
-              currentCompanySummary = {};
-            }
-            if (Object.keys(currentCompanySummary).length !== 0) {
-              const titleElement = node.querySelector('h3 span:nth-child(2)');
-              title = titleElement?.textContent || null;
-
-              const employmentTypeElement = node.querySelector('h4');
-              employmentType = employmentTypeElement?.textContent || null
-
-              company = currentCompanySummary['company_name'];
-            } else {
-              const titleElement = node.querySelector('h3');
-              title = titleElement?.textContent || null
-
-              const employmentTypeElement = node.querySelector('span.pv-entity__secondary-title');
-              employmentType = employmentTypeElement?.textContent || null
-            
-              const companyElement = node.querySelector('.pv-entity__secondary-title');
-              const companyElementClean = companyElement && companyElement?.querySelector('span') ? companyElement?.removeChild(companyElement.querySelector('span') as Node) && companyElement : companyElement || null;
-              company = companyElementClean?.textContent || null
-            }
-            
-            const descriptionElement = node.querySelector('.pv-entity__description');
-            description = descriptionElement?.textContent || null
-
-            const dateRangeElement = node.querySelector('.pv-entity__date-range span:nth-child(2)');
-            dateRangeText = dateRangeElement?.textContent || null
-
-            const startDatePart = dateRangeText?.split('–')[0] || null;
-            startDate = startDatePart?.trim() || null;
-
-            const endDatePart = dateRangeText?.split('–')[1] || null;
-            endDateIsPresent = endDatePart?.trim().toLowerCase() === 'present' || false;
-            endDate = (endDatePart && !endDateIsPresent) ? endDatePart.trim() : 'Present';
-
-            const locationElement = node.querySelector('.pv-entity__location span:nth-child(2)');
-            location = locationElement?.textContent || null;
           }
+          if (node.querySelector('[data-control-name="background_details_company"]') != null) {
+            currentCompanySummary = {};
+          }
+          if (Object.keys(currentCompanySummary).length !== 0) {
+            const titleElement = node.querySelector('h3 span:nth-child(2)');
+            title = titleElement?.textContent || null;
+
+            const employmentTypeElement = node.querySelector('h4');
+            employmentType = employmentTypeElement?.textContent || null
+
+            company = currentCompanySummary['company_name'];
+          } else {
+            const titleElement = node.querySelector('h3');
+            title = titleElement?.textContent || null
+
+            const employmentTypeElement = node.querySelector('span.pv-entity__secondary-title');
+            employmentType = employmentTypeElement?.textContent || null
+          
+            const companyElement = node.querySelector('.pv-entity__secondary-title');
+            const companyElementClean = companyElement && companyElement?.querySelector('span') ? companyElement?.removeChild(companyElement.querySelector('span') as Node) && companyElement : companyElement || null;
+            company = companyElementClean?.textContent || null
+          }
+          
+          const descriptionElement = node.querySelector('.pv-entity__description');
+          description = descriptionElement?.textContent || null
+
+          const dateRangeElement = node.querySelector('.pv-entity__date-range span:nth-child(2)');
+          dateRangeText = dateRangeElement?.textContent || null
+
+          const startDatePart = dateRangeText?.split('–')[0] || null;
+          startDate = startDatePart?.trim() || null;
+
+          const endDatePart = dateRangeText?.split('–')[1] || null;
+          endDateIsPresent = endDatePart?.trim().toLowerCase() === 'present' || false;
+          endDate = (endDatePart && !endDateIsPresent) ? endDatePart.trim() : 'Present';
+
+          const locationElement = node.querySelector('.pv-entity__location span:nth-child(2)');
+          location = locationElement?.textContent || null;
 
           data.push({
             title,
@@ -718,11 +745,24 @@ export class LinkedInProfileScraper {
         const durationInDaysForPresentDate = (endDateIsPresent && startDate) ? getDurationInDays(startDate, new Date()) : null
         const durationInDays = endDateIsPresent ? durationInDaysForPresentDate : durationInDaysWithEndDate;
 
+        let cleanedEmploymentType = getCleanText(rawExperience.employmentType);
+        if (cleanedEmploymentType && ![
+          'Full-time',
+          'Part-time',
+          'Self-employed',
+          'Freelance',
+          'Contract',
+          'Seasonal',
+          'Internship',
+          'Apprenticeship'
+        ].includes(cleanedEmploymentType)) {
+          cleanedEmploymentType = null;
+        }
         return {
           ...rawExperience,
           title: getCleanText(rawExperience.title),
           company: getCleanText(rawExperience.company),
-          employmentType: getCleanText(rawExperience.employmentType),
+          employmentType: cleanedEmploymentType,
           location: rawExperience?.location ? getLocationFromText(rawExperience.location) : null,
           startDate,
           endDate,
@@ -733,6 +773,56 @@ export class LinkedInProfileScraper {
       })
 
       statusLog(logSection, `Got experiences data: ${JSON.stringify(experiences)}`, scraperSessionId)
+
+      statusLog(logSection, `Parsing education data...`, scraperSessionId)
+
+      const rawCertificationData: RawCertification[] = await page.$$eval('#certifications-section ul > .ember-view', (nodes) => {
+        // Note: the $$eval context is the browser context.
+        // So custom methods you define in this file are not available within this $$eval.
+        let data: RawCertification[] = []
+        for (const node of nodes) {
+
+          const nameElement = node.querySelector('h3');
+          const name = nameElement?.textContent || null;
+
+          const issuingOrganizationElement = node.querySelector('p span:nth-child(2)');
+          const issuingOrganization = issuingOrganizationElement?.textContent || null;
+
+          const expirationDateElement = node.querySelector('.pv-entity__bullet-item-v2');
+          const expirationDate = expirationDateElement?.textContent || null;
+
+          let issueDate;
+          if (expirationDate) {
+            const issueDateElement = node.querySelectorAll('p span:not(.pv-entity__bullet-item-v2)')[3];
+            issueDate = issueDateElement?.textContent?.replace(expirationDate, '') || null;
+          } else {
+            issueDate = null;
+          }
+          
+          data.push({
+            name,
+            issuingOrganization,
+            issueDate,
+            expirationDate
+          })
+        }
+
+        return data
+      });
+
+      // Convert the raw data to clean data using our utils
+      // So we don't have to inject our util methods inside the browser context, which is too damn difficult using TypeScript
+      const certifications: Certification[] = rawCertificationData.map(rawCertification => {
+        return {
+          ...rawCertification,
+          name: getCleanText(rawCertification.name),
+          issuingOrganization: getCleanText(rawCertification.issuingOrganization),
+          issueDate: getCleanText(rawCertification.issueDate),
+          expirationDate: getCleanText(rawCertification.expirationDate)
+        }
+      })
+
+      statusLog(logSection, `Got certification data: ${JSON.stringify(certifications)}`, scraperSessionId)
 
       statusLog(logSection, `Parsing education data...`, scraperSessionId)
 
@@ -888,6 +978,7 @@ export class LinkedInProfileScraper {
       return {
         userProfile,
         experiences,
+        certifications,
         education,
         volunteerExperiences,
         skills

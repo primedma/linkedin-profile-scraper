@@ -23,6 +23,12 @@ export interface Experience {
     durationInDays: number | null;
     description: string | null;
 }
+interface Certification {
+    name: string | null;
+    issuingOrganization: string | null;
+    issueDate: string | null;
+    expirationDate: string | null;
+}
 export interface Education {
     schoolName: string | null;
     degreeName: string | null;
@@ -72,6 +78,7 @@ export declare class LinkedInProfileScraper {
     run: (profileUrl: string) => Promise<{
         userProfile: Profile;
         experiences: Experience[];
+        certifications: Certification[];
         education: Education[];
         volunteerExperiences: VolunteerExperience[];
         skills: Skill[];
