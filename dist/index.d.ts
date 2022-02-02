@@ -46,6 +46,39 @@ export interface VolunteerExperience {
     durationInDays: number | null;
     description: string | null;
 }
+export interface RawOrganizationAccomplishments {
+    name: string | null;
+    position: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    endDateIsPresent: boolean;
+    description: string | null;
+}
+export interface OrganizationAccomplishments {
+    name: string | null;
+    position: string | null;
+    startDate: string | Date | null;
+    endDate: string | Date | null;
+    endDateIsPresent: boolean;
+    durationInDays: number | null;
+    description: string | null;
+}
+export interface RawLanguageAccomplishments {
+    language: string | null;
+    proficiency: string | null;
+}
+export interface LanguageAccomplishments {
+    language: string | null;
+    proficiency: string | null;
+}
+export interface RawProjectAccomplishments {
+    name: string | null;
+    description: string | null;
+}
+export interface ProjectAccomplishments {
+    name: string | null;
+    description: string | null;
+}
 export interface Skill {
     skillName: string | null;
     endorsementCount: number | null;
@@ -82,6 +115,9 @@ export declare class LinkedInProfileScraper {
         education: Education[];
         volunteerExperiences: VolunteerExperience[];
         skills: Skill[];
+        organizationAccomplishments: OrganizationAccomplishments[];
+        languageAccomplishments: LanguageAccomplishments[];
+        projectAccomplishments: ProjectAccomplishments[];
     }>;
 }
 export {};

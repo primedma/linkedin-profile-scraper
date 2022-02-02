@@ -28,11 +28,11 @@ export const getIsCity = (text: string): boolean => {
 }
 
 export const formatDate = (date: moment.MomentInput | string): string => {
-  if (date === 'Present') {
-    return moment().format()
+  if (date === 'Present' || date === 'present') {
+    return moment.utc().toISOString();
   }
 
-  return moment(date, 'MMMY').format()
+  return moment(date, 'MMMY').toISOString();
 }
 
 export const getDurationInDays = (formattedStartDate: string, formattedEndDate: Date | string): number | null => {
@@ -135,10 +135,9 @@ export const getCleanText = (text: string | null) => {
   const cleanText = text
     .replace(regexRemoveLineBreaks, '')
     .replace(regexRemoveMultipleSpaces, ' ')
-    .replace('...', '')
-    .replace('See more', '')
-    .replace('See less', '')
+    .replace(/(\.\.\.|…)$/, '')
     .replace(/\s*(see more|see less)\s*$/i, '')
+    .replace(/^\s*(organization name|organization date|organization position|organization description|language name|project name|project description|)\s*/i, '')
     .trim()
 
   return cleanText

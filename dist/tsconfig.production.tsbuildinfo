@@ -447,13 +447,13 @@
         "affectsGlobalScope": false
       },
       "../src/utils/index.ts": {
-        "version": "31d8b1ac35e7769abce80e2074707e829a5f1fcb39fca5e90b957b701d89e6f6",
+        "version": "f13355366526f537c4a469f13005a6f7ca28f4210029a9150f623d018160bcbd",
         "signature": "766c9fe49658e552eb7a10f2be81b22a81280c00c3d8fadcd02c4a89f020bc1c",
         "affectsGlobalScope": false
       },
       "../src/index.ts": {
-        "version": "74ba26ef0738e473428d88062cb5edbe7bb9e311084cdf11ddbf783cba6d7055",
-        "signature": "ca3cdd7d19bd74f4139b1bdb42332dd520a0c34ea3868553eeadc61a7828e48c",
+        "version": "5c4be50b183347d367561452918742313aeda2535da93352cdbbf023401c1606",
+        "signature": "bebf804e31e9a01350cdef83055818d517726f9ca9f6078860fb8b00d51e00e3",
         "affectsGlobalScope": false
       },
       "../src/examples/list-of-urls.ts": {

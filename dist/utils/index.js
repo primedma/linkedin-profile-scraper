@@ -21,10 +21,10 @@ exports.getIsCity = (text) => {
     return !!all_the_cities_1.default.find(city => city.name.toLowerCase() === lowerCaseText);
 };
 exports.formatDate = (date) => {
-    if (date === 'Present') {
-        return moment_timezone_1.default().format();
+    if (date === 'Present' || date === 'present') {
+        return moment_timezone_1.default.utc().toISOString();
     }
-    return moment_timezone_1.default(date, 'MMMY').format();
+    return moment_timezone_1.default(date, 'MMMY').toISOString();
 };
 exports.getDurationInDays = (formattedStartDate, formattedEndDate) => {
     if (!formattedStartDate || !formattedEndDate)
@@ -98,10 +98,9 @@ exports.getCleanText = (text) => {
     const cleanText = text
         .replace(regexRemoveLineBreaks, '')
         .replace(regexRemoveMultipleSpaces, ' ')
-        .replace('...', '')
-        .replace('See more', '')
-        .replace('See less', '')
+        .replace(/(\.\.\.|…)$/, '')
         .replace(/\s*(see more|see less)\s*$/i, '')
+        .replace(/^\s*(organization name|organization date|organization position|organization description|language name|project name|project description|)\s*/i, '')
         .trim();
     return cleanText;
 };

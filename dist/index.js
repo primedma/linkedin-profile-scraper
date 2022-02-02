@@ -170,7 +170,7 @@ class LinkedInProfileScraper {
                 }
                 return prev;
             }, {});
-            blockedHostsObject = Object.assign(Object.assign({}, blockedHostsObject), { 'static.chartbeat.com': true, 'scdn.cxense.com': true, 'api.cxense.com': true, 'www.googletagmanager.com': true, 'connect.facebook.net': true, 'platform.twitter.com': true, 'tags.tiqcdn.com': true, 'dev.visualwebsiteoptimizer.com': true, 'smartlock.google.com': true, 'cdn.embedly.com': true });
+            blockedHostsObject = Object.assign(Object.assign({}, blockedHostsObject), { 'static.chartbeat.com': true, 'scdn.cxense.com': true, 'api.cxense.com': true, 'www.googletagmanager.com': true, 'connect.facebook.net': true, 'platform.twitter.com': true, 'tags.tiqcdn.com': true, 'dev.visualwebsiteoptimizer.com': true, 'smartlock.google.com': true, 'cdn.embedly.com': true, 'www.pagespeed-mod.com': true, 'ssl.google-analytics.com': true, 'radar.cedexis.com': true, 'sb.scorecardresearch.com': true });
             return blockedHostsObject;
         };
         this.close = (page) => {
@@ -266,18 +266,19 @@ class LinkedInProfileScraper {
                     '.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]',
                     '.pv-profile-section__see-more-inline',
                     '.inline-show-more-text__button',
-                    '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button',
-                    '.pv-entity__paging button.pv-profile-section__see-more-inline'
+                    '.pv-profile-section__see-more-inline.pv-profile-section__text-truncate-toggle.artdeco-button.artdeco-button--tertiary.artdeco-button--muted',
+                    '.pv-entity__paging button.pv-profile-section__see-more-inline',
+                    '#experience-section [aria-expanded="false"]'
                 ];
                 utils_1.statusLog(logSection, 'Expanding all sections by clicking their "See more" buttons', scraperSessionId);
                 for (const buttonSelector of expandButtonsSelectors) {
                     try {
-                        if ((yield page.$(buttonSelector)) !== null) {
+                        if ((yield page.$(buttonSelector)) != null) {
                             utils_1.statusLog(logSection, `Clicking button ${buttonSelector}`, scraperSessionId);
                             yield page.click(buttonSelector);
                             yield page.waitFor(100);
                             if (buttonSelector.startsWith('#certifications-section')) {
-                                while ((yield page.$(buttonSelector)) !== null) {
+                                while ((yield page.$(buttonSelector)) != null) {
                                     yield page.click(buttonSelector);
                                     yield page.waitFor(100);
                                 }
@@ -332,7 +333,7 @@ class LinkedInProfileScraper {
                 const userProfile = Object.assign(Object.assign({}, rawUserProfileData), { fullName: utils_1.getCleanText(rawUserProfileData.fullName), title: utils_1.getCleanText(rawUserProfileData.title), location: rawUserProfileData.location ? utils_1.getLocationFromText(rawUserProfileData.location) : null, description: utils_1.getCleanText(rawUserProfileData.description) });
                 utils_1.statusLog(logSection, `Got user profile data: ${JSON.stringify(userProfile)}`, scraperSessionId);
                 utils_1.statusLog(logSection, `Parsing experiences data...`, scraperSessionId);
-                const rawExperiencesData = yield page.$$eval('#experience-section ul > .ember-view, #experience-section .pv-entity__position-group-role-item', (nodes) => {
+                const rawExperiencesData = yield page.$$eval('#experience-section ul > .ember-view, #experience-section .pv-entity__position-group-role-item-fading-timeline, #experience-section .pv-entity__position-group-role-item', (nodes) => {
                     let data = [];
                     let currentCompanySummary = {};
                     for (const node of nodes) {
@@ -526,6 +527,89 @@ class LinkedInProfileScraper {
                     });
                 });
                 utils_1.statusLog(logSection, `Got skills data: ${JSON.stringify(skills)}`, scraperSessionId);
+                utils_1.statusLog(logSection, `Parsing organization accomplishments data...`, scraperSessionId);
+                const orgAccButton = 'button[aria-label="Expand organizations section"][aria-expanded="false"]';
+                if (yield page.$(orgAccButton)) {
+                    yield page.click(orgAccButton);
+                    yield page.waitFor(100);
+                }
+                const rawOrganizationAccomplishments = yield page.$$eval('.pv-profile-section.pv-accomplishments-block.organizations ul > li.ember-view', (nodes) => {
+                    var _a, _b, _c, _d, _e;
+                    const data = [];
+                    for (const node of nodes) {
+                        const nameElement = node.querySelector('.pv-accomplishment-entity__title');
+                        const name = (nameElement === null || nameElement === void 0 ? void 0 : nameElement.textContent) || null;
+                        const positionElement = node.querySelector('.pv-accomplishment-entity__position');
+                        const position = (positionElement === null || positionElement === void 0 ? void 0 : positionElement.textContent) || null;
+                        const dateRangeElement = node.querySelector('.pv-accomplishment-entity__date');
+                        const dateRange = ((_a = dateRangeElement === null || dateRangeElement === void 0 ? void 0 : dateRangeElement.textContent) === null || _a === void 0 ? void 0 : _a.replace(/\s*\n\s*/gm, '')) || null;
+                        const startDate = ((_c = (_b = dateRange === null || dateRange === void 0 ? void 0 : dateRange.split(/-|–/)) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.trim()) || null;
+                        const endDate = ((_e = (_d = dateRange === null || dateRange === void 0 ? void 0 : dateRange.split(/-|–/)) === null || _d === void 0 ? void 0 : _d[1]) === null || _e === void 0 ? void 0 : _e.trim()) || null;
+                        const endDateIsPresent = (endDate === null || endDate === void 0 ? void 0 : endDate.toLowerCase()) === "present" || false;
+                        const descriptionElement = node.querySelector('.pv-accomplishment-entity__description');
+                        const description = (descriptionElement === null || descriptionElement === void 0 ? void 0 : descriptionElement.textContent) || null;
+                        data.push({
+                            name: name,
+                            position: position,
+                            startDate: startDate,
+                            endDate: endDate,
+                            endDateIsPresent: endDateIsPresent,
+                            description: description
+                        });
+                    }
+                    return data;
+                });
+                const organizationAccomplishments = rawOrganizationAccomplishments.map(rawOrganizationAccomplishment => {
+                    const startDate = utils_1.formatDate(utils_1.getCleanText(rawOrganizationAccomplishment.startDate));
+                    const endDate = utils_1.formatDate(utils_1.getCleanText(rawOrganizationAccomplishment.endDate));
+                    return Object.assign(Object.assign({}, rawOrganizationAccomplishment), { name: utils_1.getCleanText(rawOrganizationAccomplishment.name), position: utils_1.getCleanText(rawOrganizationAccomplishment.position), description: utils_1.getCleanText(rawOrganizationAccomplishment.description), startDate: startDate, endDate: endDate, durationInDays: utils_1.getDurationInDays(startDate, endDate) });
+                });
+                utils_1.statusLog(logSection, `Parsing language accomplishments data...`, scraperSessionId);
+                const langAccButton = 'button[aria-label="Expand languages section"][aria-expanded="false"]';
+                if (yield page.$(langAccButton)) {
+                    yield page.click(langAccButton);
+                    yield page.waitFor(100);
+                }
+                const rawLanguageAccomplishments = yield page.$$eval('.pv-profile-section.pv-accomplishments-block.languages ul > li.ember-view', (nodes) => {
+                    const data = [];
+                    for (const node of nodes) {
+                        const languageElement = node.querySelector('.pv-accomplishment-entity__title');
+                        const language = (languageElement === null || languageElement === void 0 ? void 0 : languageElement.textContent) || null;
+                        const proficiencyElement = node.querySelector('.pv-accomplishment-entity__proficiency');
+                        const proficiency = (proficiencyElement === null || proficiencyElement === void 0 ? void 0 : proficiencyElement.textContent) || null;
+                        data.push({
+                            language: language,
+                            proficiency: proficiency
+                        });
+                    }
+                    return data;
+                });
+                const languageAccomplishments = rawLanguageAccomplishments.map(languageAccomplishment => {
+                    return Object.assign(Object.assign({}, languageAccomplishment), { language: utils_1.getCleanText(languageAccomplishment.language), proficiency: utils_1.getCleanText(languageAccomplishment.proficiency) });
+                });
+                utils_1.statusLog(logSection, `Parsing project accomplishments data...`, scraperSessionId);
+                const projAccButton = 'button[aria-label="Expand projects section"][aria-expanded="false"]';
+                if (yield page.$(projAccButton)) {
+                    yield page.click(projAccButton);
+                    yield page.waitFor(100);
+                }
+                const rawProjectAccomplishments = yield page.$$eval('.pv-profile-section.pv-accomplishments-block.projects ul > li.ember-view', (nodes) => {
+                    const data = [];
+                    for (const node of nodes) {
+                        const nameElement = node.querySelector('.pv-accomplishment-entity__title');
+                        const name = (nameElement === null || nameElement === void 0 ? void 0 : nameElement.textContent) || null;
+                        const descriptionElement = node.querySelector('.pv-accomplishment-entity__description');
+                        const description = (descriptionElement === null || descriptionElement === void 0 ? void 0 : descriptionElement.textContent) || null;
+                        data.push({
+                            name: name,
+                            description: description
+                        });
+                    }
+                    return data;
+                });
+                const projectAccomplishments = rawProjectAccomplishments.map(projectAccomplishment => {
+                    return Object.assign(Object.assign({}, projectAccomplishment), { name: utils_1.getCleanText(projectAccomplishment.name), description: utils_1.getCleanText(projectAccomplishment.description) });
+                });
                 utils_1.statusLog(logSection, `Done! Returned profile details for: ${profileUrl}`, scraperSessionId);
                 if (!this.options.keepAlive) {
                     utils_1.statusLog(logSection, 'Not keeping the session alive.');
@@ -542,7 +626,10 @@ class LinkedInProfileScraper {
                     certifications,
                     education,
                     volunteerExperiences,
-                    skills
+                    skills,
+                    organizationAccomplishments,
+                    languageAccomplishments,
+                    projectAccomplishments
                 };
             }
             catch (err) {

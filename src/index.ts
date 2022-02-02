@@ -103,6 +103,45 @@ export interface VolunteerExperience {
   description: string | null;
 }
 
+export interface RawOrganizationAccomplishments {
+  name: string | null;
+  position: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  endDateIsPresent: boolean;
+  description: string | null;
+}
+
+export interface OrganizationAccomplishments {
+  name: string | null;
+  position: string | null;
+  startDate: string | Date | null;
+  endDate: string | Date | null;
+  endDateIsPresent: boolean;
+  durationInDays: number | null;
+  description: string | null;
+}
+
+export interface RawLanguageAccomplishments {
+  language: string | null;
+  proficiency: string | null;
+}
+
+export interface LanguageAccomplishments {
+  language: string | null;
+  proficiency: string | null;
+}
+
+export interface RawProjectAccomplishments {
+  name: string | null;
+  description: string | null;
+}
+
+export interface ProjectAccomplishments {
+  name: string | null;
+  description: string | null;
+}
+
 export interface Skill {
   skillName: string | null;
   endorsementCount: number | null;
@@ -423,7 +462,11 @@ export class LinkedInProfileScraper {
       'tags.tiqcdn.com': true,
       'dev.visualwebsiteoptimizer.com': true,
       'smartlock.google.com': true,
-      'cdn.embedly.com': true
+      'cdn.embedly.com': true,
+      'www.pagespeed-mod.com': true,
+      'ssl.google-analytics.com': true,
+      'radar.cedexis.com': true,
+      'sb.scorecardresearch.com': true
     }
 
     return blockedHostsObject;
@@ -577,14 +620,14 @@ export class LinkedInProfileScraper {
 
       for (const buttonSelector of expandButtonsSelectors) {
         try {
-          if (await page.$(buttonSelector) !== null) {
+          if (await page.$(buttonSelector) != null) {
             statusLog(logSection, `Clicking button ${buttonSelector}`, scraperSessionId)
             await page.click(buttonSelector);
             await page.waitFor(100);
 
             // since certifications sort of paginate expands
             if (buttonSelector.startsWith('#certifications-section')) {
-              while (await page.$(buttonSelector) !== null) {
+              while (await page.$(buttonSelector) != null) {
                 await page.click(buttonSelector);
                 await page.waitFor(100);
               }
@@ -961,6 +1004,137 @@ export class LinkedInProfileScraper {
 
       statusLog(logSection, `Got skills data: ${JSON.stringify(skills)}`, scraperSessionId)
 
+      statusLog(logSection, `Parsing organization accomplishments data...`, scraperSessionId);
+
+      const orgAccButton = 'button[aria-label="Expand organizations section"][aria-expanded="false"]';
+      
+      if (await page.$(orgAccButton)) {
+        await page.click(orgAccButton);
+        await page.waitFor(100);
+      }
+
+      const rawOrganizationAccomplishments: RawOrganizationAccomplishments[] = await page.$$eval('.pv-profile-section.pv-accomplishments-block.organizations ul > li.ember-view', (nodes) => {
+        const data: RawOrganizationAccomplishments[] = [];
+
+        for (const node of nodes) {
+          const nameElement = node.querySelector('.pv-accomplishment-entity__title');
+          const name = nameElement?.textContent || null;
+
+          const positionElement = node.querySelector('.pv-accomplishment-entity__position');
+          const position = positionElement?.textContent || null;
+
+          const dateRangeElement = node.querySelector('.pv-accomplishment-entity__date');
+          const dateRange = dateRangeElement?.textContent?.replace(/\s*\n\s*/gm, '') || null;
+          
+          const startDate = dateRange?.split(/-|–/)?.[0]?.trim() || null;
+          const endDate = dateRange?.split(/-|–/)?.[1]?.trim() || null;
+
+          const endDateIsPresent = endDate?.toLowerCase() === "present" || false;
+
+          const descriptionElement = node.querySelector('.pv-accomplishment-entity__description');
+          const description = descriptionElement?.textContent || null;
+
+          data.push({
+            name: name,
+            position: position,
+            startDate: startDate,
+            endDate: endDate,
+            endDateIsPresent: endDateIsPresent,
+            description: description
+          });
+        }
+
+        return data
+      });
+
+      const organizationAccomplishments: OrganizationAccomplishments[] = rawOrganizationAccomplishments.map(rawOrganizationAccomplishment => {
+        const startDate = formatDate(getCleanText(rawOrganizationAccomplishment.startDate));
+        const endDate = formatDate(getCleanText(rawOrganizationAccomplishment.endDate));
+
+        return {
+          ...rawOrganizationAccomplishment,
+          name: getCleanText(rawOrganizationAccomplishment.name),
+          position: getCleanText(rawOrganizationAccomplishment.position),
+          description: getCleanText(rawOrganizationAccomplishment.description),
+          startDate: startDate,
+          endDate: endDate,
+          durationInDays: getDurationInDays(startDate, endDate)
+        }
+      })
+
+      statusLog(logSection, `Parsing language accomplishments data...`, scraperSessionId);
+
+      const langAccButton = 'button[aria-label="Expand languages section"][aria-expanded="false"]';
+      if (await page.$(langAccButton)) {
+        await page.click(langAccButton);
+        await page.waitFor(100);
+      }
+      
+      const rawLanguageAccomplishments: RawLanguageAccomplishments[] = await page.$$eval('.pv-profile-section.pv-accomplishments-block.languages ul > li.ember-view', (nodes) => {
+        const data: RawLanguageAccomplishments[] = [];
+        
+        for (const node of nodes) {
+          
+          const languageElement = node.querySelector('.pv-accomplishment-entity__title');
+          const language = languageElement?.textContent || null;
+
+          const proficiencyElement = node.querySelector('.pv-accomplishment-entity__proficiency');
+          const proficiency = proficiencyElement?.textContent || null;
+          
+          
+          data.push({
+            language: language,
+            proficiency: proficiency
+          })
+        }
+
+        return data;
+      });
+
+      const languageAccomplishments: LanguageAccomplishments[] = rawLanguageAccomplishments.map(languageAccomplishment => {
+        return {
+          ...languageAccomplishment,
+          language: getCleanText(languageAccomplishment.language),
+          proficiency: getCleanText(languageAccomplishment.proficiency)
+        }
+      })
+
+      statusLog(logSection, `Parsing project accomplishments data...`, scraperSessionId);
+
+      const projAccButton = 'button[aria-label="Expand projects section"][aria-expanded="false"]';
+      if (await page.$(projAccButton)) {
+        await page.click(projAccButton);
+        await page.waitFor(100);
+      }
+      
+      const rawProjectAccomplishments: RawProjectAccomplishments[] = await page.$$eval('.pv-profile-section.pv-accomplishments-block.projects ul > li.ember-view', (nodes) => {
+        const data: RawProjectAccomplishments[] = []
+
+        for (const node of nodes) {
+          const nameElement = node.querySelector('.pv-accomplishment-entity__title');
+          const name = nameElement?.textContent || null;
+
+          const descriptionElement = node.querySelector('.pv-accomplishment-entity__description');
+          const description = descriptionElement?.textContent || null;
+
+          data.push({
+            name: name,
+            description: description
+          })
+        }
+
+        return data;
+
+      });
+
+      const projectAccomplishments: ProjectAccomplishments[] = rawProjectAccomplishments.map(projectAccomplishment => {
+        return {
+          ...projectAccomplishment,
+          name: getCleanText(projectAccomplishment.name),
+          description: getCleanText(projectAccomplishment.description)
+        }
+      });
+
       statusLog(logSection, `Done! Returned profile details for: ${profileUrl}`, scraperSessionId)
 
       if (!this.options.keepAlive) {
@@ -982,7 +1156,10 @@ export class LinkedInProfileScraper {
         certifications,
         education,
         volunteerExperiences,
-        skills
+        skills,
+        organizationAccomplishments,
+        languageAccomplishments,
+        projectAccomplishments
       }
     } catch (err) {
       // Kill Puppeteer
