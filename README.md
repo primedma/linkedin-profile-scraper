@@ -1,4 +1,4 @@
-#NOTES
+# NOTES
 2022-02-12: LinkedIn just changed their DOM element names again (I think)--haven't tested it recently. Would have to check and re-specify certain tags to search for, etc.
 
 ------
