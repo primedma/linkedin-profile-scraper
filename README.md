@@ -1,3 +1,6 @@
+#NOTES
+2022-02-12: LinkedIn just changed their DOM element names again (I think)--haven't tested it recently. Would have to check and re-specify certain tags to search for, etc.
+
 ------
 # LinkedIn Profile Scraper
 LinkedIn profile scraper using Puppeteer headless browser. So you can use it on a server. Returns structured data in JSON format. Works in 2022.
