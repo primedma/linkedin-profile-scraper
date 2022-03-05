@@ -495,7 +495,7 @@ export class LinkedInProfileScraper {
           statusLog(loggerPrefix, 'Closing browser...');
           await this.browser.close();
           statusLog(loggerPrefix, 'Closed browser!');
-
+          // @ts-ignore: Object is possibly 'null'.
           const browserProcessPid = this.browser.process().pid;
 
           // Completely kill the browser process to prevent zombie processes
